@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Report Tracker</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f8; /* Light blue-gray background */
+            display: flex;
+            justify-content: center;
+            align-items: center; /* Center vertically for login */
+            min-height: 100vh;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 90%; /* Responsive width */
+            width: 1200px; /* Max width for larger screens */
+            background-color: #ffffff;
+            border-radius: 12px; /* More rounded corners */
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1); /* Stronger shadow */
+            padding: 2.5rem; /* Increased padding */
+            animation: fadeIn 0.8s ease-out; /* Fade in animation */
+        }
+        .dashboard-container {
+            display: none; /* Hidden by default until logged in */
+            max-width: 90%; /* Responsive width */
+            width: 1200px; /* Max width for larger screens */
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 2.5rem;
+            animation: fadeIn 0.8s ease-out;
+            min-height: 100vh; /* Allow dashboard to stretch if content is long */
+            align-items: flex-start; /* Align to top for better scrolling */
+        }
+        .login-container {
+            max-width: 400px; /* Smaller width for login */
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Custom scrollbar for table container if needed */
+        .table-container::-webkit-scrollbar {
+            height: 8px;
+        }
+        .table-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1; /* Gray-300 */
+            border-radius: 4px;
+        }
+        .table-container::-webkit-scrollbar-track {
+            background-color: #e2e8f0; /* Gray-200 */
+        }
+
+        /* Styles for the custom message box */
+        .message-box {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+            display: none; /* Hidden by default */
+            text-align: center;
+            max-width: 90%; /* Responsive width */
+            width: 500px; /* Max width */
+            max-height: 80vh; /* Limit height */
+            overflow-y: auto; /* Scrollable content */
+        }
+        .message-box-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none; /* Hidden by default */
+        }
+
+        /* Custom style for wider dropdowns in the table */
+        /* Using a specific class on the selects themselves */
+        .owner-select,
+        .status-select {
+            width: 100%; /* Take full width of the cell */
+            /* The 'min-width' was causing excessive space for short content.
+               Instead, relying on the TD's calculated width from fixed table layout. */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+
+    <!-- Authentication Container (Login/Register Forms) -->
+    <div id="authContainer" class="container login-container p-8 bg-white rounded-lg shadow-xl">
+        <!-- Login Form -->
+        <div id="loginForm">
+            <h1 class="text-3xl font-extrabold text-gray-800 mb-6">🔑 Login to Dashboard</h1>
+            <div class="mb-4">
+                <label for="loginUserId" class="sr-only">User ID</label>
+                <input type="email" id="loginUserId" placeholder="yourname@surya.com"
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" required>
+            </div>
+            <div class="mb-6">
+                <label for="loginPassword" class="sr-only">Password</label>
+                <input type="password" id="loginPassword" placeholder="Password"
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out" required>
+            </div>
+            <button id="loginBtn"
+                    class="w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                Login
+            </button>
+            <p class="mt-4 text-sm text-gray-600">
+                Don't have an account? <a href="#" id="showRegisterLink" class="text-blue-600 hover:underline">Register here</a>.
+            </p>
+            <p class="mt-2 text-sm text-gray-600">
+                <a href="#" id="forgotPasswordLink" class="text-blue-600 hover:underline">Forgot Password?</a>
+            </p>
+        </div>
+
+        <!-- Register Form -->
+        <div id="registerForm" style="display: none;">
+            <h1 class="text-3xl font-extrabold text-gray-800 mb-6">📝 Register New Account</h1>
+            <div class="mb-4">
+                <label for="registerUserId" class="sr-only">User ID (Email)</label>
+                <input type="email" id="registerUserId" placeholder="yourname@example.com"
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
+            </div>
+            <div class="mb-4">
+                <label for="registerPassword" class="sr-only">Password</label>
+                <input type="password" id="registerPassword" placeholder="Password"
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
+            </div>
+            <div class="mb-6">
+                <label for="confirmRegisterPassword" class="sr-only">Confirm Password</label>
+                <input type="password" id="confirmRegisterPassword" placeholder="Confirm Password"
+                       class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
+            </div>
+            <button id="registerBtn"
+                    class="w-full bg-purple-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                Register
+            </button>
+            <p class="mt-4 text-sm text-gray-600">
+                Already have an account? <a href="#" id="showLoginLink" class="text-blue-600 hover:underline">Login here</a>.
+            </p>
+        </div>
+    </div>
+
+    <!-- Dashboard Container -->
+    <div id="dashboardContainer" class="dashboard-container">
+        <div class="flex justify-between items-center w-full mb-8">
+            <h1 class="text-4xl font-extrabold text-gray-800">📊 Report Tracking Dashboard</h1>
+            <button id="logoutBtn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                Logout
+            </button>
+        </div>
+        
+        <!-- User Role Info -->
+        <div class="text-center mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <p class="text-sm text-gray-600">Logged in as: <span id="currentUserId" class="font-mono text-gray-800 font-semibold"></span></p>
+        </div>
+
+        <!-- Reports Table -->
+        <div class="overflow-x-auto rounded-lg shadow-md mb-8">
+            <table class="min-w-full divide-y divide-gray-200" style="table-layout: fixed;">
+                <thead class="bg-blue-600">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg" style="width: 20%;">Report Name</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 10%;">Frequency</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 12%;">Owner</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 10%;">Due Date</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 12%;">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 13%;">Completion Date</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 23%;">Notes</th>
+                    </tr>
+                </thead>
+                <tbody id="reportsTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Report rows will be inserted here by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Action Buttons: Save and View Log -->
+        <div class="flex flex-col sm:flex-row justify-center gap-4 mb-8">
+            <button id="saveToCsvBtn" class="bg-green-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                💾 Save All Reports to Excel (CSV)
+            </button>
+            <button id="viewLogBtn" class="bg-gray-700 text-white font-semibold py-3 px-6 rounded-md hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                📜 View Completed Reports Log
+            </button>
+        </div>
+
+        <!-- Add New Report Form -->
+        <div class="mb-8 p-6 bg-blue-50 rounded-lg shadow-inner">
+            <h2 class="text-2xl font-bold text-blue-800 mb-4">Add New Report</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div>
+                    <label for="newReportName" class="block text-sm font-medium text-gray-700 mb-1">Report Name</label>
+                    <input type="text" id="newReportName" placeholder="e.g., Q4 Sales Overview"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                </div>
+                <div>
+                    <label for="newFrequency" class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+                    <select id="newFrequency"
+                            class="w-full p-3 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                        <option value="Weekly">Weekly</option>
+                        <option value="Monthly">Monthly</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="newOwner" class="block text-sm font-medium text-gray-700 mb-1">Owner</label>
+                    <select id="newOwner"
+                            class="w-full p-3 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                        <!-- Options will be populated by JS -->
+                    </select>
+                </div>
+                <div>
+                    <label for="newDueDate" class="block text-sm font-medium text-gray-700 mb-1">Due Date</label>
+                    <input type="date" id="newDueDate"
+                            class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                </div>
+                <div>
+                    <label for="newStatus" class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                    <select id="newStatus"
+                            class="w-full p-3 border border-gray-300 rounded-md bg-white focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                        <option value="Not Started">Not Started</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Completed">Completed</option>
+                        <option value="Overdue">Overdue</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="newNotes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                    <input type="text" id="newNotes" placeholder="Any important notes..."
+                            class="w-full p-3 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 transition duration-150 ease-in-out">
+                </div>
+            </div>
+            <button id="addReportBtn"
+                    class="mt-6 w-full bg-blue-600 text-white font-semibold py-3 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition duration-200 ease-in-out transform hover:scale-105">
+                Add Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Custom Message Box -->
+    <div id="messageBoxOverlay" class="message-box-overlay"></div>
+    <div id="messageBox" class="message-box">
+        <p id="messageBoxText" class="text-gray-800 text-lg mb-4"></p>
+        <div id="messageBoxContent"></div> <!-- Added for log display -->
+        <button id="messageBoxCloseBtn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700 transition duration-150 ease-in-out">OK</button>
+    </div>
+
+    <script>
+        // Use an IIFE (Immediately Invoked Function Expression) to create a private scope
+        (function() {
+            // --- Data Version for Local Storage (Increment this when initialReportsData changes significantly) ---
+            const DATA_VERSION = 2; // Increment this to force a refresh of initial data
+
+            // Local storage keys
+            const LS_ACTIVE_REPORTS_KEY = 'activeReportsData';
+            const LS_COMPLETED_REPORTS_KEY = 'completedReportsData';
+            const LS_LOGGED_IN_USER_KEY = 'loggedInUserEmail'; // Stores the email of the logged-in user
+            const LS_REGISTERED_USERS_KEY = 'registeredUsers'; // Stores registered user credentials
+            const LS_DATA_VERSION_KEY = 'appDataVersion'; // Stores the current data version in local storage
+
+            // Local data arrays (will be loaded/saved from localStorage)
+            let activeReports = [];
+            let completedReports = []; 
+            let registeredUsers = {}; // { 'email': 'password' }
+
+            let currentUserEmail = null; // Stores the email of the currently logged-in user
+
+            // DOM Elements
+            const authContainer = document.getElementById('authContainer');
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const dashboardContainer = document.getElementById('dashboardContainer');
+
+            const loginUserIdInput = document.getElementById('loginUserId');
+            const loginPasswordInput = document.getElementById('loginPassword');
+            const loginBtn = document.getElementById('loginBtn');
+            const showRegisterLink = document.getElementById('showRegisterLink');
+            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+
+            const registerUserIdInput = document.getElementById('registerUserId');
+            const registerPasswordInput = document.getElementById('registerPassword');
+            const confirmRegisterPasswordInput = document.getElementById('confirmRegisterPassword');
+            const registerBtn = document.getElementById('registerBtn');
+            const showLoginLink = document.getElementById('showLoginLink');
+
+            const logoutBtn = document.getElementById('logoutBtn');
+            const currentUserIdDisplay = document.getElementById('currentUserId');
+
+
+            // Helper to get next Friday's date in YYYY-MM-DD format
+            function getNextFriday() {
+                const d = new Date();
+                const day = d.getDay();
+                const daysUntilFriday = day === 5 ? 7 : (5 - day + 7) % 7; 
+                d.setDate(d.getDate() + daysUntilFriday);
+                return d.toISOString().slice(0, 10);
+            }
+
+            // Helper to get 15th of next month in YYYY-MM-DD format
+            function getNextMonth15th() {
+                const d = new Date();
+                d.setMonth(d.getMonth() + 1); 
+                d.setDate(15); 
+                return d.toISOString().slice(0, 10);
+            }
+
+            // Initial reports data (used if no data in localStorage for activeReports)
+            const initialReportsData = [
+                // Weekly Reports
+                { id: 'w1', name: "Surya Freight Weekly Report Data Prep", frequency: "Weekly", owner: "Rohit", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'w2', name: "RST Freight Weekly Report Data Prep", frequency: "Weekly", owner: "Hemant", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'w3', name: "MGBW Freight Weekly Report Data Prep", frequency: "Weekly", owner: "Vinay", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'w4', name: "Overstock Margin Tracker Report", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
+                { id: 'w5', name: "Overstock LTL Margin Report", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: " send mail to stake holders" },
+                // Removed: { id: 'w6', name: "Overstock Weekly Parcel Report", frequency: "Weekly", owner: "Richa", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                // Removed: { id: 'w7', name: "Overstock weekly LTL Pracel", frequency: "Weekly", owner: "Rohit", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'w8', name: "AW Hiring", frequency: "Weekly", owner: "Hemant", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'w9', name: "Weekly Overmax Disputes UPS", frequency: "Weekly", owner: "Vinay", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
+                { id: 'w10', name: "Weekly Overmax Disputes FedEx", frequency: "Weekly", owner: "Richa", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
+                { id: 'w11', name: "GV Freight Weekly Report Data Prep", frequency: "Weekly", owner: "Rohit", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
+                // Monthly Reports
+                { id: 'm1', name: "Monthly Surya Vendor Summary", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'm2', name: "Monthly ROI Tracker", frequency: "Monthly", owner: "Hemant", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'm3', name: "Tracking Shipment FedEx", frequency: "Monthly", owner: "Vinay", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'm4', name: "Cpacity Report JL", frequency: "Monthly", owner: "Richa", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: "" },
+                { id: 'm5', name: "Cpacity Report White", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: "" }
+            ];
+
+            // Predefined list of owners for the dropdown
+            const owners = [
+                "Vinay", "Hemant", "Rohit", "Richa"
+            ];
+
+            // --- Custom Message Box Functions ---
+            const messageBox = document.getElementById('messageBox');
+            const messageBoxText = document.getElementById('messageBoxText');
+            const messageBoxContent = document.getElementById('messageBoxContent'); 
+            const messageBoxCloseBtn = document.getElementById('messageBoxCloseBtn');
+            const messageBoxOverlay = document.getElementById('messageBoxOverlay');
+
+            function showMessage(message, contentHtml = '') {
+                messageBoxText.textContent = message;
+                messageBoxContent.innerHTML = contentHtml; 
+                messageBox.style.display = 'block';
+                messageBoxOverlay.style.display = 'block';
+            }
+
+            function hideMessageBox() {
+                messageBox.style.display = 'none';
+                messageBoxOverlay.style.display = 'none';
+                messageBoxText.textContent = ''; 
+                messageBoxContent.innerHTML = ''; 
+                messageBoxCloseBtn.onclick = hideMessageBox; 
+            }
+
+            // Set up event listeners for the message box only once
+            messageBoxCloseBtn.onclick = hideMessageBox;
+            messageBoxOverlay.onclick = hideMessageBox;
+
+            // Function to populate the owner dropdowns
+            function populateOwnerDropdowns() {
+                const newOwnerSelect = document.getElementById('newOwner');
+                newOwnerSelect.innerHTML = ''; 
+                owners.forEach(owner => {
+                    const option = document.createElement('option');
+                    option.value = owner;
+                    option.textContent = owner;
+                    newOwnerSelect.appendChild(option);
+                });
+
+                document.querySelectorAll('.owner-select').forEach(selectElement => {
+                    const currentOwner = selectElement.value; 
+                    selectElement.innerHTML = ''; 
+                    owners.forEach(owner => {
+                        const option = document.createElement('option');
+                        option.value = owner;
+                        option.textContent = owner;
+                        selectElement.appendChild(option);
+                    });
+                    selectElement.value = currentOwner; 
+                });
+            }
+
+            // Function to render the reports table
+            function renderReports() {
+                console.log("Rendering activeReports:", activeReports); 
+                const tableBody = document.getElementById('reportsTableBody');
+                tableBody.innerHTML = ''; 
+
+                let overdueReports = [];
+                const today = new Date();
+                today.setHours(0, 0, 0, 0); 
+
+                activeReports.forEach((report) => {
+                    const row = document.createElement('tr');
+                    row.dataset.id = report.id; 
+                    row.className = 'hover:bg-gray-50'; 
+
+                    const dueDate = new Date(report.dueDate);
+                    dueDate.setHours(0, 0, 0, 0);
+
+                    if (report.status !== 'Completed' && dueDate < today) {
+                        report.status = 'Overdue'; 
+                        overdueReports.push(report.name);
+                    }
+
+                    let statusBgClass = '';
+                    if (report.status === 'In Progress') {
+                        statusBgClass = 'bg-green-100 text-green-800 font-semibold';
+                    } else if (report.status === 'Not Started') {
+                         statusBgClass = 'bg-gray-100 text-gray-800 font-semibold';
+                    } else if (report.status === 'Overdue') {
+                        statusBgClass = 'bg-red-100 text-red-800 font-semibold';
+                    } else if (report.status === 'Completed') {
+                        statusBgClass = 'bg-blue-100 text-blue-800 font-semibold';
+                    }
+
+                    // Applying whitespace-nowrap only where needed (due date, completion date)
+                    row.innerHTML = `
+                        <td class="px-6 py-4 text-sm font-medium text-gray-900" data-field="name">${report.name}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900">
+                            <select class="frequency-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" data-field="frequency">
+                                <option value="Weekly" ${report.frequency === 'Weekly' ? 'selected' : ''}>Weekly</option>
+                                <option value="Monthly" ${report.frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-900" data-field="owner">
+                            <select class="owner-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" data-field="owner">
+                                <!-- Options will be populated dynamically -->
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-field="dueDate">${report.dueDate}</td>
+                        <td class="px-6 py-4 text-sm ${statusBgClass}" data-field="status">
+                            <select class="status-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${statusBgClass}" data-field="status">
+                                <option value="Not Started" ${report.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
+                                <option value="In Progress" ${report.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+                                <option value="Completed" ${report.status === 'Completed' ? 'selected' : ''}>Completed</option>
+                                <option value="Overdue" ${report.status === 'Overdue' ? 'selected' : ''}>Overdue</option>
+                            </select>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-field="completionDate">${report.completionDate || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-900" data-field="notes">${report.notes}</td>
+                    `;
+                    tableBody.appendChild(row);
+
+                    const ownerSelectElement = row.querySelector('.owner-select');
+                    owners.forEach(owner => {
+                        const option = document.createElement('option');
+                        option.value = owner;
+                        option.textContent = owner;
+                        ownerSelectElement.appendChild(option);
+                    });
+                    ownerSelectElement.value = report.owner; 
+                });
+
+                addEventListenersToTable();
+
+                // Overdue reports alert (now for all users)
+                if (overdueReports.length > 0) {
+                    const overdueMessage = "The following reports are overdue:\n" + overdueReports.join("\n");
+                    showMessage("Overdue Reports Alert!", `<pre class="text-left">${overdueMessage}</pre>`);
+                }
+            }
+
+            function addEventListenersToTable() {
+                document.querySelectorAll('#reportsTableBody td[data-field]:not([data-field="frequency"]):not([data-field="owner"]):not([data-field="status"])').forEach(cell => {
+                    cell.contentEditable = true; 
+                    cell.classList.add('cursor-pointer', 'p-2', 'border', 'border-transparent', 'rounded-md', 'focus:border-blue-300', 'focus:bg-blue-50'); 
+                    cell.onblur = (event) => {
+                        const reportId = event.target.closest('tr').dataset.id; 
+                        const field = event.target.dataset.field;
+                        const newValue = event.target.textContent;
+                        
+                        const reportIndex = activeReports.findIndex(r => r.id === reportId);
+                        if (reportIndex !== -1) {
+                            activeReports[reportIndex][field] = newValue;
+                            saveReportsToLocalStorage(); 
+                            renderReports(); 
+                        }
+                    };
+                    cell.onkeydown = (event) => {
+                        if (event.key === 'Enter') {
+                            event.preventDefault(); 
+                            event.target.blur(); 
+                        }
+                    }
+                });
+
+                document.querySelectorAll('.frequency-select, .owner-select, .status-select').forEach(select => {
+                    select.onchange = (event) => {
+                        const reportId = event.target.closest('tr').dataset.id; 
+                        const field = event.target.dataset.field;
+                        const newValue = event.target.value;
+                        
+                        const reportIndex = activeReports.findIndex(r => r.id === reportId);
+
+                        if (reportIndex !== -1) {
+                            const currentReport = activeReports[reportIndex];
+                            currentReport[field] = newValue; 
+
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0);
+                            const dueDate = new Date(currentReport.dueDate);
+                            dueDate.setHours(0, 0, 0, 0);
+
+                            if (field === 'status' && newValue === 'Completed') {
+                                currentReport.completionDate = new Date().toISOString().slice(0, 10); 
+                                
+                                if (dueDate < today) {
+                                    completedReports.push({ ...currentReport, movedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') }); 
+                                    activeReports.splice(reportIndex, 1); 
+                                }
+                            } else if (field === 'status' && newValue !== 'Completed') {
+                                currentReport.completionDate = '';
+                            }
+                            saveReportsToLocalStorage(); 
+                            renderReports(); 
+                        }
+                    };
+                });
+            }
+
+            document.getElementById('addReportBtn').onclick = () => {
+                const name = document.getElementById('newReportName').value.trim();
+                const frequency = document.getElementById('newFrequency').value;
+                const owner = document.getElementById('newOwner').value;
+                const dueDate = document.getElementById('newDueDate').value;
+                const status = document.getElementById('newStatus').value;
+                const notes = document.getElementById('newNotes').value.trim();
+
+                if (!name || !dueDate) {
+                    showMessage('Report Name and Due Date are required!'); 
+                    return;
+                }
+
+                const newReport = {
+                    id: 'local_' + Date.now(), 
+                    name,
+                    frequency,
+                    owner,
+                    dueDate,
+                    status,
+                    completionDate: status === 'Completed' ? new Date().toISOString().slice(0, 10) : '',
+                    notes,
+                    createdAt: new Date().toISOString().slice(0, 19).replace('T', ' ') 
+                };
+
+                activeReports.push(newReport);
+                saveReportsToLocalStorage(); 
+                renderReports();
+
+                document.getElementById('newReportName').value = '';
+                document.getElementById('newDueDate').value = '';
+                document.getElementById('newNotes').value = '';
+                document.getElementById('newStatus').value = 'Not Started'; 
+            };
+
+            document.getElementById('saveToCsvBtn').onclick = () => {
+                const allReports = [...activeReports, ...completedReports]; 
+                
+                if (allReports.length === 0) {
+                    showMessage("No reports to save!");
+                    return;
+                }
+
+                const headers = ["Report Name", "Frequency", "Owner", "Due Date", "Status", "Completion Date", "Notes", "Created At", "Moved To Log At"];
+                let csvContent = headers.join(",") + "\n"; 
+
+                allReports.forEach(report => {
+                    const escapeCsv = (value) => {
+                        if (value === null || value === undefined) return '';
+                        let stringValue = String(value);
+                        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+                            return `"${stringValue.replace(/"/g, '""')}"`;
+                        }
+                        return stringValue;
+                    };
+
+                    const row = [
+                        escapeCsv(report.name),
+                        escapeCsv(report.frequency),
+                        escapeCsv(report.owner),
+                        escapeCsv(report.dueDate),
+                        escapeCsv(report.status),
+                        escapeCsv(report.completionDate || 'N/A'),
+                        escapeCsv(report.notes || ''),
+                        escapeCsv(report.createdAt || 'N/A'),
+                        escapeCsv(report.movedAt || 'N/A')
+                    ].join(",");
+                    csvContent += row + "\n";
+                });
+
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+
+                const link = document.createElement('a');
+                link.setAttribute('href', url);
+                link.setAttribute('download', 'all_reports_log.csv'); 
+                document.body.appendChild(link); 
+                link.click(); 
+                document.body.removeChild(link); 
+                URL.revokeObjectURL(url); 
+
+                showMessage("All reports saved to all_reports_log.csv!");
+            };
+
+
+            document.getElementById('viewLogBtn').onclick = () => {
+                let logContent = 'No completed reports in log.';
+                if (completedReports.length > 0) {
+                    completedReports.sort((a, b) => new Date(b.movedAt || 0) - new Date(a.movedAt || 0));
+
+                    logContent = '<h3 class="font-bold text-xl mb-4 text-blue-700">Completed Reports History</h3>';
+                    logContent += `<div class="grid grid-cols-1 gap-4 text-sm">`;
+                    completedReports.forEach(report => {
+                        logContent += `
+                            <div class="p-4 border border-gray-200 rounded-md bg-gray-50">
+                                <p><strong class="text-blue-600">Report:</strong> ${report.name}</p>
+                                <p><strong class="text-gray-700">Frequency:</strong> ${report.frequency}</p>
+                                <p><strong class="text-gray-700">Owner:</strong> ${report.owner}</p>
+                                <p><strong class="text-gray-700">Due Date:</strong> ${report.dueDate}</p>
+                                <p><strong class="text-gray-700">Completion Date:</strong> ${report.completionDate || 'N/A'}</p>
+                                <p><strong class="text-gray-700">Moved to Log:</strong> ${report.movedAt || 'N/A'}</p>
+                                <p><strong class="text-gray-700">Notes:</strong> ${report.notes || 'N/A'}</p>
+                            </div>
+                        `;
+                    });
+                    logContent += `</div>`;
+                }
+                showMessage("Completed Reports Log", logContent);
+            };
+
+            // --- Local Storage Management Functions ---
+            function saveReportsToLocalStorage() {
+                localStorage.setItem(LS_ACTIVE_REPORTS_KEY, JSON.stringify(activeReports));
+                localStorage.setItem(LS_COMPLETED_REPORTS_KEY, JSON.stringify(completedReports));
+                localStorage.setItem(LS_REGISTERED_USERS_KEY, JSON.stringify(registeredUsers)); // Save registered users
+                localStorage.setItem(LS_DATA_VERSION_KEY, DATA_VERSION.toString()); // Save the current data version
+                console.log("Reports, user data, and version saved to local storage.");
+            }
+
+            function loadReportsFromLocalStorage() {
+                const storedDataVersion = parseInt(localStorage.getItem(LS_DATA_VERSION_KEY));
+                
+                // If the stored version is older than the current version, or no version is stored,
+                // clear existing report data and load initial data.
+                if (isNaN(storedDataVersion) || storedDataVersion < DATA_VERSION) {
+                    console.log("Local storage data version mismatch or not found. Resetting initial data.");
+                    localStorage.removeItem(LS_ACTIVE_REPORTS_KEY);
+                    localStorage.removeItem(LS_COMPLETED_REPORTS_KEY);
+                    activeReports = initialReportsData.map(report => ({ ...report })); 
+                    completedReports = [];
+                } else {
+                    const storedActiveReports = localStorage.getItem(LS_ACTIVE_REPORTS_KEY);
+                    const storedCompletedReports = localStorage.getItem(LS_COMPLETED_REPORTS_KEY);
+
+                    if (storedActiveReports) {
+                        activeReports = JSON.parse(storedActiveReports);
+                        activeReports.forEach(report => {
+                            if (report.dueDate) report.dueDate = String(report.dueDate);
+                            if (report.completionDate) report.completionDate = String(report.completionDate);
+                        });
+                        console.log("Active reports loaded from local storage.");
+                    } else {
+                        activeReports = initialReportsData.map(report => ({ ...report })); 
+                        console.log("No active reports found in local storage, loading initial data.");
+                    }
+
+                    if (storedCompletedReports) {
+                        completedReports = JSON.parse(storedCompletedReports);
+                        completedReports.forEach(report => {
+                            if (report.dueDate) report.dueDate = String(report.dueDate);
+                            if (report.completionDate) report.completionDate = String(report.completionDate);
+                            if (report.movedAt) report.movedAt = String(report.movedAt);
+                        });
+                        console.log("Completed reports loaded from local storage.");
+                    } else {
+                        completedReports = []; 
+                        console.log("No completed reports found in local storage.");
+                    }
+                }
+
+                // Registered users are independent of the report data version, always load if available
+                const storedRegisteredUsers = localStorage.getItem(LS_REGISTERED_USERS_KEY);
+                if (storedRegisteredUsers) {
+                    registeredUsers = JSON.parse(storedRegisteredUsers);
+                    console.log("Registered users loaded from local storage.");
+                } else {
+                    registeredUsers = {};
+                    console.log("No registered users found in local storage. Starting with empty user database.");
+                }
+            }
+
+            // --- Login/Registration Form Toggling ---
+            function showLoginForm() {
+                loginForm.style.display = 'block';
+                registerForm.style.display = 'none';
+                loginUserIdInput.focus(); // Focus on email input
+            }
+
+            function showRegisterForm() {
+                loginForm.style.display = 'none';
+                registerForm.style.display = 'block';
+                registerUserIdInput.focus(); // Focus on email input
+            }
+
+            // --- Login/Logout Functions ---
+            function showLoginScreen() {
+                authContainer.style.display = 'block';
+                dashboardContainer.style.display = 'none';
+                document.body.style.alignItems = 'center'; // Center vertically for auth screen
+                localStorage.removeItem(LS_LOGGED_IN_USER_KEY); // Clear logged in user
+                currentUserEmail = null;
+                // Clear login inputs
+                loginUserIdInput.value = '';
+                loginPasswordInput.value = '';
+                // Clear register inputs
+                registerUserIdInput.value = '';
+                registerPasswordInput.value = '';
+                confirmRegisterPasswordInput.value = '';
+
+                showLoginForm(); // Show login form by default
+            }
+
+            function showDashboardScreen(userEmail) {
+                authContainer.style.display = 'none';
+                dashboardContainer.style.display = 'block';
+                document.body.style.alignItems = 'flex-start'; // Align to top for dashboard content
+
+                localStorage.setItem(LS_LOGGED_IN_USER_KEY, userEmail); // Store logged in user's email
+                currentUserEmail = userEmail;
+                currentUserIdDisplay.textContent = currentUserEmail; // Display logged-in user email
+
+                loadReportsFromLocalStorage(); // Ensure data is loaded (and initial data if new session)
+                populateOwnerDropdowns();
+                saveReportsToLocalStorage(); // Save current state and version after loading/resetting
+                renderReports();
+            }
+
+            // --- Event Listeners for Auth Forms ---
+            loginBtn.onclick = () => {
+                const userId = loginUserIdInput.value.trim();
+                const password = loginPasswordInput.value.trim();
+
+                if (!userId || !password) {
+                    showMessage("User ID and Password cannot be empty.");
+                    return;
+                }
+
+                // User ID validation for login: must end with @surya.com
+                if (!userId.endsWith('@surya.com')) {
+                    showMessage("User ID must end with '@surya.com' for login.");
+                    return;
+                }
+
+                // Password validation for login: minimum 6 characters
+                if (password.length < 6) {
+                    showMessage("Password must be at least 6 characters long for login.");
+                    return;
+                }
+
+                if (registeredUsers[userId] && registeredUsers[userId] === password) {
+                    showDashboardScreen(userId);
+                } else {
+                    showMessage("Invalid User ID or Password.");
+                }
+            };
+
+            registerBtn.onclick = () => {
+                const userId = registerUserIdInput.value.trim();
+                const password = registerPasswordInput.value.trim();
+                const confirmPassword = confirmRegisterPasswordInput.value.trim();
+
+                if (!userId || !password || !confirmPassword) {
+                    showMessage("All fields are required for registration.");
+                    return;
+                }
+
+                if (password !== confirmPassword) {
+                    showMessage("Passwords do not match.");
+                    return;
+                }
+
+                if (registeredUsers[userId]) {
+                    showMessage("User ID already exists. Please choose a different one or login.");
+                    return;
+                }
+
+                // Register the new user
+                registeredUsers[userId] = password;
+                saveReportsToLocalStorage(); // Saves registeredUsers along with reports
+                showMessage("Account registered successfully! Please login.", `<strong class="text-blue-600">${userId}</strong>`);
+                
+                // Switch back to login form after successful registration
+                showLoginForm();
+                loginUserIdInput.value = userId; // Pre-fill login email
+                loginPasswordInput.focus(); // Focus on password for immediate login
+            };
+
+            showRegisterLink.onclick = (e) => {
+                e.preventDefault();
+                showRegisterForm();
+            };
+
+            showLoginLink.onclick = (e) => {
+                e.preventDefault();
+                showLoginForm();
+            };
+
+            forgotPasswordLink.onclick = (e) => {
+                e.preventDefault();
+                showMessage("Password recovery is not available in this local demo. Please contact support.");
+            };
+
+            logoutBtn.onclick = () => {
+                showLoginScreen();
+            };
+
+            // Initial setup on page load
+            window.onload = () => {
+                loadReportsFromLocalStorage(); // Load all data, including registered users
+                saveReportsToLocalStorage(); // Ensure the current version is saved after loading
+
+                const loggedInUserEmail = localStorage.getItem(LS_LOGGED_IN_USER_KEY);
+                if (loggedInUserEmail) {
+                    showDashboardScreen(loggedInUserEmail);
+                } else {
+                    showLoginScreen();
+                }
+            };
+        })(); 
+    </script>
+</body>
+</html>
