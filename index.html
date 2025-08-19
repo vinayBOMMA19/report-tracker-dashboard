@@ -89,13 +89,11 @@
             display: none; /* Hidden by default */
         }
 
-        /* Custom style for wider dropdowns in the table */
-        /* Using a specific class on the selects themselves */
+        /* Ensure dropdowns take full available width in their cells */
         .owner-select,
-        .status-select {
-            width: 100%; /* Take full width of the cell */
-            /* The 'min-width' was causing excessive space for short content.
-               Instead, relying on the TD's calculated width from fixed table layout. */
+        .status-select,
+        .frequency-select {
+            width: 100%; 
         }
     </style>
 </head>
@@ -123,26 +121,23 @@
             <p class="mt-4 text-sm text-gray-600">
                 Don't have an account? <a href="#" id="showRegisterLink" class="text-blue-600 hover:underline">Register here</a>.
             </p>
-            <p class="mt-2 text-sm text-gray-600">
-                <a href="#" id="forgotPasswordLink" class="text-blue-600 hover:underline">Forgot Password?</a>
-            </p>
         </div>
 
         <!-- Register Form -->
         <div id="registerForm" style="display: none;">
             <h1 class="text-3xl font-extrabold text-gray-800 mb-6">📝 Register New Account</h1>
             <div class="mb-4">
-                <label for="registerUserId" class="sr-only">User ID (Email)</label>
+                <label for="registerUserId" class="block text-left text-sm font-medium text-gray-700 mb-1">User ID (Email)</label>
                 <input type="email" id="registerUserId" placeholder="yourname@example.com"
                        class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
             </div>
             <div class="mb-4">
-                <label for="registerPassword" class="sr-only">Password</label>
+                <label for="registerPassword" class="block text-left text-sm font-medium text-gray-700 mb-1">Password</label>
                 <input type="password" id="registerPassword" placeholder="Password"
                        class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
             </div>
-            <div class="mb-6">
-                <label for="confirmRegisterPassword" class="sr-only">Confirm Password</label>
+            <div class="mb-4">
+                <label for="confirmRegisterPassword" class="block text-left text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
                 <input type="password" id="confirmRegisterPassword" placeholder="Confirm Password"
                        class="w-full p-3 border border-gray-300 rounded-md focus:ring-purple-500 focus:border-purple-500 transition duration-150 ease-in-out" required>
             </div>
@@ -176,12 +171,12 @@
                 <thead class="bg-blue-600">
                     <tr>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider rounded-tl-lg" style="width: 20%;">Report Name</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 10%;">Frequency</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 12%;">Owner</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 14%;">Frequency</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 13%;">Owner</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 10%;">Due Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 12%;">Status</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 15%;">Status</th>
                         <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 13%;">Completion Date</th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 23%;">Notes</th>
+                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-white uppercase tracking-wider" style="width: 15%;">Notes</th>
                     </tr>
                 </thead>
                 <tbody id="reportsTableBody" class="bg-white divide-y divide-gray-200">
@@ -264,19 +259,19 @@
         // Use an IIFE (Immediately Invoked Function Expression) to create a private scope
         (function() {
             // --- Data Version for Local Storage (Increment this when initialReportsData changes significantly) ---
-            const DATA_VERSION = 2; // Increment this to force a refresh of initial data
+            const DATA_VERSION = 4; // Increment this to force a refresh of initial data
 
             // Local storage keys
             const LS_ACTIVE_REPORTS_KEY = 'activeReportsData';
             const LS_COMPLETED_REPORTS_KEY = 'completedReportsData';
             const LS_LOGGED_IN_USER_KEY = 'loggedInUserEmail'; // Stores the email of the logged-in user
-            const LS_REGISTERED_USERS_KEY = 'registeredUsers'; // Stores registered user credentials
+            const LS_REGISTERED_USERS_KEY = 'registeredUsers'; // Stores registered user credentials ({'email': 'password'})
             const LS_DATA_VERSION_KEY = 'appDataVersion'; // Stores the current data version in local storage
 
             // Local data arrays (will be loaded/saved from localStorage)
             let activeReports = [];
             let completedReports = []; 
-            let registeredUsers = {}; // { 'email': 'password' }
+            let registeredUsers = {}; 
 
             let currentUserEmail = null; // Stores the email of the currently logged-in user
 
@@ -290,7 +285,7 @@
             const loginPasswordInput = document.getElementById('loginPassword');
             const loginBtn = document.getElementById('loginBtn');
             const showRegisterLink = document.getElementById('showRegisterLink');
-            const forgotPasswordLink = document.getElementById('forgotPasswordLink');
+            // const forgotPasswordLink = document.getElementById('forgotPasswordLink'); // Removed from HTML and JS
 
             const registerUserIdInput = document.getElementById('registerUserId');
             const registerPasswordInput = document.getElementById('registerPassword');
@@ -327,8 +322,6 @@
                 { id: 'w3', name: "MGBW Freight Weekly Report Data Prep", frequency: "Weekly", owner: "Vinay", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
                 { id: 'w4', name: "Overstock Margin Tracker Report", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
                 { id: 'w5', name: "Overstock LTL Margin Report", frequency: "Monthly", owner: "Rohit", dueDate: getNextMonth15th(), status: "Not Started", completionDate: "", notes: " send mail to stake holders" },
-                // Removed: { id: 'w6', name: "Overstock Weekly Parcel Report", frequency: "Weekly", owner: "Richa", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
-                // Removed: { id: 'w7', name: "Overstock weekly LTL Pracel", frequency: "Weekly", owner: "Rohit", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
                 { id: 'w8', name: "AW Hiring", frequency: "Weekly", owner: "Hemant", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: "" },
                 { id: 'w9', name: "Weekly Overmax Disputes UPS", frequency: "Weekly", owner: "Vinay", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
                 { id: 'w10', name: "Weekly Overmax Disputes FedEx", frequency: "Weekly", owner: "Richa", dueDate: getNextFriday(), status: "Not Started", completionDate: "", notes: " send mail to stake holders " },
@@ -414,38 +407,40 @@
                     const dueDate = new Date(report.dueDate);
                     dueDate.setHours(0, 0, 0, 0);
 
+                    // Re-evaluate status if overdue, but don't override if already Completed
                     if (report.status !== 'Completed' && dueDate < today) {
                         report.status = 'Overdue'; 
                         overdueReports.push(report.name);
                     }
 
+                    // Define status-based background and text colors
                     let statusBgClass = '';
                     if (report.status === 'In Progress') {
-                        statusBgClass = 'bg-green-100 text-green-800 font-semibold';
+                        statusBgClass = 'bg-orange-100 text-orange-800 font-semibold';
                     } else if (report.status === 'Not Started') {
                          statusBgClass = 'bg-gray-100 text-gray-800 font-semibold';
                     } else if (report.status === 'Overdue') {
                         statusBgClass = 'bg-red-100 text-red-800 font-semibold';
                     } else if (report.status === 'Completed') {
-                        statusBgClass = 'bg-blue-100 text-blue-800 font-semibold';
+                        statusBgClass = 'bg-green-100 text-green-800 font-semibold';
                     }
 
-                    // Applying whitespace-nowrap only where needed (due date, completion date)
+                    // Apply whitespace-nowrap to cells containing dropdowns and dates
                     row.innerHTML = `
                         <td class="px-6 py-4 text-sm font-medium text-gray-900" data-field="name">${report.name}</td>
-                        <td class="px-6 py-4 text-sm text-gray-900">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                             <select class="frequency-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" data-field="frequency">
                                 <option value="Weekly" ${report.frequency === 'Weekly' ? 'selected' : ''}>Weekly</option>
                                 <option value="Monthly" ${report.frequency === 'Monthly' ? 'selected' : ''}>Monthly</option>
                             </select>
                         </td>
-                        <td class="px-6 py-4 text-sm text-gray-900" data-field="owner">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-field="owner">
                             <select class="owner-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500" data-field="owner">
                                 <!-- Options will be populated dynamically -->
                             </select>
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900" data-field="dueDate">${report.dueDate}</td>
-                        <td class="px-6 py-4 text-sm ${statusBgClass}" data-field="status">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm ${statusBgClass}" data-field="status">
                             <select class="status-select w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 ${statusBgClass}" data-field="status">
                                 <option value="Not Started" ${report.status === 'Not Started' ? 'selected' : ''}>Not Started</option>
                                 <option value="In Progress" ${report.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
@@ -458,6 +453,7 @@
                     `;
                     tableBody.appendChild(row);
 
+                    // Populate owner dropdown for the newly created row
                     const ownerSelectElement = row.querySelector('.owner-select');
                     owners.forEach(owner => {
                         const option = document.createElement('option');
@@ -470,7 +466,7 @@
 
                 addEventListenersToTable();
 
-                // Overdue reports alert (now for all users)
+                // Overdue reports alert
                 if (overdueReports.length > 0) {
                     const overdueMessage = "The following reports are overdue:\n" + overdueReports.join("\n");
                     showMessage("Overdue Reports Alert!", `<pre class="text-left">${overdueMessage}</pre>`);
@@ -478,6 +474,7 @@
             }
 
             function addEventListenersToTable() {
+                // Event listeners for editable text fields (like Report Name and Notes)
                 document.querySelectorAll('#reportsTableBody td[data-field]:not([data-field="frequency"]):not([data-field="owner"]):not([data-field="status"])').forEach(cell => {
                     cell.contentEditable = true; 
                     cell.classList.add('cursor-pointer', 'p-2', 'border', 'border-transparent', 'rounded-md', 'focus:border-blue-300', 'focus:bg-blue-50'); 
@@ -490,7 +487,7 @@
                         if (reportIndex !== -1) {
                             activeReports[reportIndex][field] = newValue;
                             saveReportsToLocalStorage(); 
-                            renderReports(); 
+                            renderReports(); // Re-render to update any status/color changes
                         }
                     };
                     cell.onkeydown = (event) => {
@@ -501,6 +498,7 @@
                     }
                 });
 
+                // Event listeners for dropdowns (Frequency, Owner, Status)
                 document.querySelectorAll('.frequency-select, .owner-select, .status-select').forEach(select => {
                     select.onchange = (event) => {
                         const reportId = event.target.closest('tr').dataset.id; 
@@ -511,25 +509,34 @@
 
                         if (reportIndex !== -1) {
                             const currentReport = activeReports[reportIndex];
-                            currentReport[field] = newValue; 
+                            
+                            // Handle status change specifically
+                            if (field === 'status') {
+                                currentReport.status = newValue; // Update the status immediately
 
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0);
-                            const dueDate = new Date(currentReport.dueDate);
-                            dueDate.setHours(0, 0, 0, 0);
-
-                            if (field === 'status' && newValue === 'Completed') {
-                                currentReport.completionDate = new Date().toISOString().slice(0, 10); 
-                                
-                                if (dueDate < today) {
-                                    completedReports.push({ ...currentReport, movedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') }); 
-                                    activeReports.splice(reportIndex, 1); 
+                                if (newValue === 'Completed') {
+                                    currentReport.completionDate = new Date().toISOString().slice(0, 10); // Set completion date
+                                    
+                                    // Only add to completedReports if it's not already there by ID, 
+                                    // or if you want multiple entries for re-completion.
+                                    // For simplicity and a clear log, we'll push a new entry each time it's marked completed.
+                                    // IMPORTANT: The report is NOT removed from activeReports, it stays there.
+                                    completedReports.push({ 
+                                        ...currentReport, 
+                                        movedAt: new Date().toISOString().slice(0, 19).replace('T', ' ') // Timestamp when moved to log
+                                    }); 
+                                    // activeReports.splice(reportIndex, 1); // <-- THIS LINE IS NOW REMOVED
+                                } else {
+                                    // If status changes away from 'Completed', clear completion date
+                                    currentReport.completionDate = '';
                                 }
-                            } else if (field === 'status' && newValue !== 'Completed') {
-                                currentReport.completionDate = '';
+                            } else {
+                                // For Frequency and Owner, just update the value
+                                currentReport[field] = newValue; 
                             }
+                            
                             saveReportsToLocalStorage(); 
-                            renderReports(); 
+                            renderReports(); // Re-render the entire table to reflect changes and colors
                         }
                     };
                 });
@@ -564,6 +571,7 @@
                 saveReportsToLocalStorage(); 
                 renderReports();
 
+                // Clear form fields after adding
                 document.getElementById('newReportName').value = '';
                 document.getElementById('newDueDate').value = '';
                 document.getElementById('newNotes').value = '';
@@ -622,6 +630,7 @@
 
             document.getElementById('viewLogBtn').onclick = () => {
                 let logContent = 'No completed reports in log.';
+                // The log now simply displays what's in `completedReports` array
                 if (completedReports.length > 0) {
                     completedReports.sort((a, b) => new Date(b.movedAt || 0) - new Date(a.movedAt || 0));
 
@@ -706,35 +715,24 @@
                 }
             }
 
-            // --- Login/Registration Form Toggling ---
-            function showLoginForm() {
-                loginForm.style.display = 'block';
-                registerForm.style.display = 'none';
-                loginUserIdInput.focus(); // Focus on email input
-            }
-
-            function showRegisterForm() {
+            // --- Form Toggling Functions ---
+            function showForm(formToShow) {
                 loginForm.style.display = 'none';
-                registerForm.style.display = 'block';
-                registerUserIdInput.focus(); // Focus on email input
-            }
-
-            // --- Login/Logout Functions ---
-            function showLoginScreen() {
-                authContainer.style.display = 'block';
+                registerForm.style.display = 'none';
                 dashboardContainer.style.display = 'none';
+                authContainer.style.display = 'block';
                 document.body.style.alignItems = 'center'; // Center vertically for auth screen
-                localStorage.removeItem(LS_LOGGED_IN_USER_KEY); // Clear logged in user
-                currentUserEmail = null;
-                // Clear login inputs
-                loginUserIdInput.value = '';
-                loginPasswordInput.value = '';
-                // Clear register inputs
-                registerUserIdInput.value = '';
-                registerPasswordInput.value = '';
-                confirmRegisterPasswordInput.value = '';
 
-                showLoginForm(); // Show login form by default
+                if (formToShow === 'login') {
+                    loginForm.style.display = 'block';
+                    loginUserIdInput.focus();
+                } else if (formToShow === 'register') {
+                    registerForm.style.display = 'block';
+                    registerUserIdInput.value = '';
+                    registerPasswordInput.value = '';
+                    confirmRegisterPasswordInput.value = '';
+                    registerUserIdInput.focus();
+                } 
             }
 
             function showDashboardScreen(userEmail) {
@@ -762,18 +760,17 @@
                     return;
                 }
 
-                // User ID validation for login: must end with @surya.com
                 if (!userId.endsWith('@surya.com')) {
                     showMessage("User ID must end with '@surya.com' for login.");
                     return;
                 }
 
-                // Password validation for login: minimum 6 characters
                 if (password.length < 6) {
                     showMessage("Password must be at least 6 characters long for login.");
                     return;
                 }
 
+                // Check if user exists AND password matches
                 if (registeredUsers[userId] && registeredUsers[userId] === password) {
                     showDashboardScreen(userId);
                 } else {
@@ -786,13 +783,18 @@
                 const password = registerPasswordInput.value.trim();
                 const confirmPassword = confirmRegisterPasswordInput.value.trim();
 
-                if (!userId || !password || !confirmPassword) {
-                    showMessage("All fields are required for registration.");
+                if (!userId || !password || !confirmPassword) { 
+                    showMessage("All fields are required for registration (User ID, Password, Confirm Password).");
                     return;
                 }
 
                 if (password !== confirmPassword) {
                     showMessage("Passwords do not match.");
+                    return;
+                }
+                
+                if (password.length < 6) {
+                    showMessage("Password must be at least 6 characters long.");
                     return;
                 }
 
@@ -801,34 +803,29 @@
                     return;
                 }
 
-                // Register the new user
-                registeredUsers[userId] = password;
+                // Register the new user with just the password
+                registeredUsers[userId] = password; // Store only the password string
                 saveReportsToLocalStorage(); // Saves registeredUsers along with reports
                 showMessage("Account registered successfully! Please login.", `<strong class="text-blue-600">${userId}</strong>`);
                 
                 // Switch back to login form after successful registration
-                showLoginForm();
+                showForm('login');
                 loginUserIdInput.value = userId; // Pre-fill login email
                 loginPasswordInput.focus(); // Focus on password for immediate login
             };
 
             showRegisterLink.onclick = (e) => {
                 e.preventDefault();
-                showRegisterForm();
+                showForm('register');
             };
 
             showLoginLink.onclick = (e) => {
                 e.preventDefault();
-                showLoginForm();
-            };
-
-            forgotPasswordLink.onclick = (e) => {
-                e.preventDefault();
-                showMessage("Password recovery is not available in this local demo. Please contact support.");
+                showForm('login');
             };
 
             logoutBtn.onclick = () => {
-                showLoginScreen();
+                showForm('login'); // Show login screen, which also clears logged in user
             };
 
             // Initial setup on page load
@@ -837,10 +834,12 @@
                 saveReportsToLocalStorage(); // Ensure the current version is saved after loading
 
                 const loggedInUserEmail = localStorage.getItem(LS_LOGGED_IN_USER_KEY);
-                if (loggedInUserEmail) {
+                // Updated check for login: now checks if registeredUsers[loggedInUserEmail] exists and is a string (the password)
+                if (loggedInUserEmail && typeof registeredUsers[loggedInUserEmail] === 'string') { 
                     showDashboardScreen(loggedInUserEmail);
                 } else {
-                    showLoginScreen();
+                    localStorage.removeItem(LS_LOGGED_IN_USER_KEY); // Clear stale login
+                    showForm('login'); // Show login form by default
                 }
             };
         })(); 
